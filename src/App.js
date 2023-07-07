@@ -4,8 +4,20 @@ import FilterButton from "./components/FilterButton";
 import React, {useState} from 'react';
 import {nanoid} from 'nanoid';
 
+const FILTER_MAP = {
+  All: () => true,
+  Active: (task) => !task.completed,
+  Completed: (task) => task.completed,
+};
+
+const FILTER_NAMES = Object.keys(FILTER_MAP); // these constants are being defined outside our App() function because ...
+//..if they were defined inside they will be recalculated everytime <App/> component is re-rendered. 
+
+
+
 function App(props) {
   const [tasks, setTask] = useState(props.tasks);
+  const [filter, setFilter] = useState('All');
 
   function toggleTaskCompleted(id){
     let updatedTasks = tasks.map((task)=>{
@@ -17,6 +29,18 @@ function App(props) {
     setTask(updatedTasks);
     console.log(updatedTasks[0])
   }
+
+  function editTask(id, newName) {
+    const editedTaskList = tasks.map((task) => {
+      // if this task has the same ID as the edited task
+      if (id === task.id) {
+        //
+        return { ...task, name: newName };
+      }
+      return task;
+    });
+    setTask(editedTaskList);
+  }  
 
   function deleteTask(id){
     const remainingTasks = tasks.filter((task)=>task.id!==id);
@@ -31,16 +55,30 @@ function App(props) {
     // alert(name);
   }
 
-  const tasklist = tasks?.map((task)=>(
-    <Todo 
-    id={task.id} 
-    name={task.name} 
-    completed={task.completed }
-    key = {task.id}
-    toggleTaskCompleted = {toggleTaskCompleted}
-    deleteTask = {deleteTask}
-    />)
-  );
+  const tasklist = tasks
+  .filter(FILTER_MAP[filter])
+  .map((task) => (
+    <Todo
+      id={task.id}
+      name={task.name}
+      completed={task.completed}
+      key={task.id}
+      toggleTaskCompleted={toggleTaskCompleted}
+      deleteTask={deleteTask}
+      editTask={editTask}
+    />
+  ));
+
+
+  const filterList = FILTER_NAMES.map((name) => (
+    <FilterButton
+      key={name}
+      name={name}
+      isPressed={name === filter}
+      setFilter={setFilter}
+    />
+  ));
+  
 
   const tasksNoun = tasklist.length !== 1 ? "tasks" : "task";
   const headingText = `${tasklist.length} ${tasksNoun} remaining`;
@@ -50,9 +88,7 @@ function App(props) {
       <h1>TodoMatic</h1>
       <Form addTask={addTask}/>
       <div className="filters btn-group stack-exception">
-        <FilterButton/>
-        <FilterButton/>
-        <FilterButton/>
+        {filterList}
       </div>
       <h2 id="list-heading">{headingText}</h2>
       <ul
